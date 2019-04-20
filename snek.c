@@ -14,6 +14,7 @@ int main()
 	tongueColor = makeColor(0x1f, 0, 0);
 	white = makeColor(0x1f, 0x1f, 0x1f);
 	black = 0;
+	winColor = makeColor(0, 0x17, 0x03);
 	srand(time(NULL));
 	while (1) 
 	{
@@ -215,41 +216,39 @@ void hasEaten()
 		snek[length] = snek[length - 1];
 		++length;
 		uint8 flag = 1;
+		uint8 temp = rand();
 		// sets a random height and width and progresses forward until the food is not on top of the snake
 		for (uint8 Y = rand(); flag; ++Y)
-			for (uint8 X = rand(); flag; ++X) 
+		{
+			Y %= HEIGHT - 1;
+			for (uint8 X = temp + 1; flag; ++X)
 			{
-				Y %= HEIGHT - 1;
 				X %= WIDTH - 1;
 				for (uint16 i = 0; i < length; ++i)
-					if (X == snek[i].x && Y == snek[i].y) 
+					if (X == snek[i].x && Y == snek[i].y)
 					{
 						flag = 0;
 						break;
 					}
-				if (flag) 
+				if (flag)
 				{
 					flag = 0;
 					food.x = X;
 					food.y = Y;
 				}
 				else
+				{
 					flag = 1;
+					if (X == temp && flag)
+						break;
+				}
 			}
+		}
 		justAte = 1;
 		popup = 2;
 		drawOther(snek[0], nomColor, 0);
-		// draw the eyes farther apart than normal - snakes stretch they jaw when eating and this attempts to aesthetic flavor by visualizing that.
-		if (dir == UP || dir == DOWN) 
-		{
-			SCREENBUFFER[(snek[0].y * TILE_SIZE + TILE_SIZE / 2) * SCREEN_WIDTH + snek[0].x * TILE_SIZE + TILE_SIZE / 2 + 2] = 0;
-			SCREENBUFFER[(snek[0].y * TILE_SIZE + TILE_SIZE / 2) * SCREEN_WIDTH + snek[0].x * TILE_SIZE + TILE_SIZE / 2 - 3] = 0;
-		}
-		else 
-		{
-			SCREENBUFFER[(snek[0].y * TILE_SIZE + TILE_SIZE / 2 + 2) * SCREEN_WIDTH + snek[0].x * TILE_SIZE + TILE_SIZE / 2] = 0;
-			SCREENBUFFER[(snek[0].y * TILE_SIZE + TILE_SIZE / 2 - 3) * SCREEN_WIDTH + snek[0].x * TILE_SIZE + TILE_SIZE / 2] = 0;
-		}
+		// draw the eyes farther apart than normal - snakes stretch they jaw when eating and this attempts to add aesthetic flavor by visualizing that.
+		drawBiggerEyes();
 	}
 	else
 		drawSnek();
@@ -257,20 +256,66 @@ void hasEaten()
 
 uint8 isDead() 
 {
-	if (hitWall() || hitSelf()) 
+	uint8 ateSelf = hitSelf();
+	if (hitWall() || ateSelf) 
 	{
-		drawTongue(black);
-		drawOther(food, 0, 0);
+		drawOther(snek[0], black, 0);
+		drawOther(snek[0], aliveColor, 1);
+		drawHead(black);
+		drawOther(food, black, 0);
+		if (lastDir != dir) 
+		{
+			if (dir != DOWN)
+				drawUp(lastDir != UP ? aliveColor : black);
+			if (dir != UP)
+				drawDown(lastDir != DOWN ? aliveColor : black);
+			if (dir != RIGHT)
+				drawLeft(lastDir != LEFT ? aliveColor : black);
+			if (dir != LEFT)
+				drawRight(lastDir != RIGHT ? aliveColor : black);
+		}
+		else
+		{
+			if (dir == DOWN)
+				drawUp(aliveColor);
+			if (dir == UP)
+				drawDown(aliveColor);
+			if (dir == RIGHT)
+				drawLeft(aliveColor);
+			if (dir == LEFT)
+				drawRight(aliveColor);
+		}
+		if (dir == DOWN)
+			drawDown(black);
+		if (dir == UP)
+			drawUp(black);
+		if (dir == RIGHT)
+			drawRight(black);
+		if (dir == LEFT)
+			drawLeft(black);
 		dead = 1;
 		sync();
-		for (uint16 i = 0; i < length; ++i)
-			drawOther(snek[i], i % 2 == 0 ? deadColor & nomColor : deadColor, 0);
+		drawDead();
 		for (uint8 i = 0; i < 15; ++i)
 			sync();
 		// make the snake fade out like an old-school rpg boss
 		fadeTileArray(snek, length, black);
 		for (uint8 i = 0; i < 5; ++i)
 			sync();
+	}
+	else if (length == HEIGHT * WIDTH)
+	{
+		dead = 1;
+		justAte = 0;
+		drawOther(food, black, 0);
+		drawOther(snek[0], black, 0);
+		drawSnek();
+		drawHead(black);
+		sync();
+		drawWin();
+		for (uint8 i = 0; i < 20; ++i)
+			sync();
+		clearScreen();
 	}
 	return dead;
 }
@@ -283,8 +328,26 @@ uint8 hitWall()
 uint8 hitSelf() 
 {
 	for (uint16 i = 1; i < length; ++i)
-		if (snek[0].x == snek[i].x && snek[0].y == snek[i].y)
-			return 1;
+	{
+		if (dir == UP)
+		{
+			if (snek[0].x == snek[i].x && snek[0].y - 1 == snek[i].y)
+				return 1;
+		}
+		else if (dir == DOWN)
+		{
+			if (snek[0].x == snek[i].x && snek[0].y + 1 == snek[i].y)
+				return 1;
+		}
+		else if (dir == LEFT)
+		{
+			if (snek[0].x - 1 == snek[i].x && snek[0].y == snek[i].y)
+				return 1;
+		}
+		else
+			if (snek[0].x + 1 == snek[i].x && snek[0].y == snek[i].y)
+				return 1;
+	}
 	return 0;
 }
 
@@ -356,11 +419,25 @@ void drawHead(uint16 color)
 	}
 }
 
+void drawBiggerEyes()
+{
+	if (dir == UP || dir == DOWN)
+	{
+		SCREENBUFFER[(snek[0].y * TILE_SIZE + TILE_SIZE / 2) * SCREEN_WIDTH + snek[0].x * TILE_SIZE + TILE_SIZE / 2 + 2] = black;
+		SCREENBUFFER[(snek[0].y * TILE_SIZE + TILE_SIZE / 2) * SCREEN_WIDTH + snek[0].x * TILE_SIZE + TILE_SIZE / 2 - 3] = black;
+	}
+	else
+	{
+		SCREENBUFFER[(snek[0].y * TILE_SIZE + TILE_SIZE / 2 + 2) * SCREEN_WIDTH + snek[0].x * TILE_SIZE + TILE_SIZE / 2] = black;
+		SCREENBUFFER[(snek[0].y * TILE_SIZE + TILE_SIZE / 2 - 3) * SCREEN_WIDTH + snek[0].x * TILE_SIZE + TILE_SIZE / 2] = black;
+	}
+}
+
 void drawTongue(uint16 color) 
 {
 	if (odo == 20) 
 	{
-		if (snek[0].y != HEIGHT - 1 && snek[0].y != 0 && snek[0].x != 0 && snek[0].x != WIDTH - 1 && !justAte) 
+		if (!(justAte || hitWall() || hitSelf()))
 		{
 			uint8 height = dir == LEFT || dir == RIGHT ? 2 : TILE_SIZE / 2;
 			uint8 width = height == 2 ? TILE_SIZE / 2 : 2;
@@ -601,11 +678,39 @@ void fade(struct Rect r, uint8 density, uint16 toColor)
 		}
 }
 
+void drawDead()
+{
+	for (uint16 i = 0; i < length; ++i)
+		for (uint8 y = 0; y < TILE_SIZE; ++y)
+			for (uint8 x = 0; x < TILE_SIZE; ++x)
+			{
+				uint32 pos = (snek[i].y * TILE_SIZE + y) * SCREEN_WIDTH + snek[i].x * TILE_SIZE + x;
+				if (SCREENBUFFER[pos] != black)
+					SCREENBUFFER[pos] = i % 2 ? deadColor : SCREENBUFFER[pos] & deadColor;
+			}
+}
+
+void drawWin()
+{
+	uint16 length = SCREEN_HEIGHT * SCREEN_WIDTH;
+	for (uint16 i = 0; i < length; ++i)
+		SCREENBUFFER[i] = SCREENBUFFER[i] == black ? white : winColor;
+}
+
+void clearScreen()
+{
+	uint16 length = SCREEN_HEIGHT * SCREEN_WIDTH;
+	for (uint16 i = 0; i < length; ++i)
+		SCREENBUFFER[i] = black;
+}
+
 // UNUSED
 
-void invert(struct Rect r) {
-	for (int y = 0; y < TILE_SIZE; ++y)
-		for (int x = 0; x < TILE_SIZE; ++x) {
+void invert(struct Rect r) 
+{
+	for (uint8 y = 0; y < TILE_SIZE; ++y)
+		for (uint8 x = 0; x < TILE_SIZE; ++x) 
+		{
 			uint32 pos = (r.y * TILE_SIZE + y) * SCREEN_WIDTH + r.x * TILE_SIZE + x;
 			SCREENBUFFER[pos] = white - SCREENBUFFER[pos];
 		}
