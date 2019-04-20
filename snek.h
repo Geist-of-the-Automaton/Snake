@@ -41,6 +41,7 @@ static uint16 deadColor;
 static uint16 tongueColor;
 static uint16 black;
 static uint16 white;
+static uint16 winColor;
 
 // GAMEPLAY VARIABLES
 uint8 dead;
@@ -74,6 +75,7 @@ uint16 makeColor(uint8 r, uint8 g, uint8 b);
 void drawSnek();
 void drawOther(struct Rect r, uint16 color, uint8 border);
 void drawHead(uint16 color);
+void drawBiggerEyes();
 void drawTongue(uint16 color);
 void drawSegment(uint16 color);
 void drawLeft(uint16 color);
@@ -87,3 +89,6 @@ void drawQ3();
 void drawQ4();
 void fadeTileArray(struct Rect r[], uint16 len, uint16 toColor);
 void fade(struct Rect r, uint8 density, uint16 toColor);
+void drawDead();
+void drawWin();
+void clearScreen();
