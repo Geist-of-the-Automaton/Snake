@@ -1,4 +1,3 @@
-//Header file
 #define SCREEN_WIDTH	240
 #define SCREEN_HEIGHT	160
 
@@ -87,8 +86,8 @@ void drawQ1();
 void drawQ2();
 void drawQ3();
 void drawQ4();
-void fadeTileArray(struct Rect r[], uint16 len, uint16 toColor);
-void fade(struct Rect r, uint8 density, uint16 toColor);
+void fadeSnek();
+void fadeTile(struct Rect r, uint8 fadeStrength);
 void drawDead();
 void drawWin();
 void clearScreen();
