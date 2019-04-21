@@ -216,33 +216,29 @@ void hasEaten()
 		snek[length] = snek[length - 1];
 		++length;
 		uint8 flag = 1;
-		uint8 temp = rand();
+		uint8 X = rand();
+		uint8 Y = rand() % HEIGHT;
 		// sets a random height and width and progresses forward until the food is not on top of the snake
-		for (uint8 Y = rand(); flag; ++Y)
+		while(flag)
 		{
-			Y %= HEIGHT - 1;
-			for (uint8 X = temp + 1; flag; ++X)
+			++X;
+			X %= WIDTH;
+			if (!X)
 			{
-				X %= WIDTH - 1;
-				for (uint16 i = 0; i < length; ++i)
-					if (X == snek[i].x && Y == snek[i].y)
-					{
-						flag = 0;
-						break;
-					}
-				if (flag)
-				{
-					flag = 0;
-					food.x = X;
-					food.y = Y;
-				}
-				else
-				{
-					flag = 1;
-					if (X == temp && flag)
-						break;
-				}
+				++Y;
+				Y %= HEIGHT;
 			}
+			for (uint16 i = 0; i < length && flag; ++i)
+				if (X == snek[i].x && Y == snek[i].y)
+					flag = 0;
+			if (flag)
+			{
+				flag = 0;
+				food.x = X;
+				food.y = Y;
+			}
+			else
+				flag = 1;
 		}
 		justAte = 1;
 		popup = 2;
@@ -293,15 +289,15 @@ uint8 isDead()
 			drawRight(black);
 		if (dir == LEFT)
 			drawLeft(black);
+		drawTail();
 		dead = 1;
 		sync();
 		drawDead();
 		for (uint8 i = 0; i < 15; ++i)
 			sync();
 		// make the snake fade out like an old-school rpg boss
-		fadeTileArray(snek, length, black);
-		for (uint8 i = 0; i < 5; ++i)
-			sync();
+		fadeSnek();
+		sync();
 	}
 	else if (length == HEIGHT * WIDTH)
 	{
@@ -588,17 +584,19 @@ void drawUp(uint16 color)
 
 void drawTail()
 {
-	if (snek[length - 1].x > snek[length - 2].x)
+	uint16 index = snek[length - 1].x == snek[length - 2].x && snek[length - 1].y == snek[length - 2].y ? length - 3 : length - 2;
+	//uint16 index = justAte ? length - 3 : length - 2;
+	if (snek[length - 1].x > snek[index].x)
 	{
 		drawQ1();
 		drawQ4();
 	}
-	else if (snek[length - 1].x < snek[length - 2].x)
+	else if (snek[length - 1].x < snek[index].x)
 	{
 		drawQ2();
 		drawQ3();
 	}
-	else if (snek[length - 1].y > snek[length - 2].y)
+	else if (snek[length - 1].y > snek[index].y)
 	{
 		drawQ3();
 		drawQ4();
@@ -646,35 +644,40 @@ void drawQ4()
 			SCREENBUFFER[(snek[length - 1].y * TILE_SIZE + TILE_SIZE - (1 + (i - y))) * SCREEN_WIDTH + snek[length - 1].x * TILE_SIZE + TILE_SIZE - (y - x)] = black;
 }
 
-void fadeTileArray(struct Rect r[], uint16 len, uint16 toColor) 
+uint16 fadeColor(uint16 color)
+{
+	uint8 b = color >> 10;
+	uint8 g = (color - (b << 10)) >> 5;
+	uint8 r = color - ((b << 10) + (g << 5));
+	if (b > 0)
+		--b;
+	if (g > 0)
+		--g;
+	if (r > 0)
+		--r;
+	return makeColor(r, g, b);
+}
+
+void fadeSnek() 
 {
 	// fades tiles given in an array. can be used for columns and rows if wanted
-	uint8 k = 0;
-	for (short i = len - 1; i >= -(TILE_SIZE / 2); --i) 
+	for (short i = length - 1; i > -32; --i) 
 	{
-		for (uint8 j = TILE_SIZE / 2; j > 0; --j)
-		{
-			++k;
-			uint8 c = 2 * (j - 1);
-			if (i >= 0 && i < len)
-				fade(r[i], j, toColor | makeColor(c, c, c));
-			++i;
-		}
+		for (short j = i < 0 ? 0 : i; j < length && j < i + 32; ++j)
+			fadeTile(snek[j], 1);
 		sync();
-		i -= k;
-		k = 0;
 	}
 }
 
-void fade(struct Rect r, uint8 density, uint16 toColor) 
+void fadeTile(struct Rect r, uint8 fadeStrength) 
 {
 	// fades a tiles by a pixel density
 	for (uint8 y = 0; y < TILE_SIZE; ++y)
 		for (uint8 x = 0; x < TILE_SIZE; ++x) 
 		{
 			uint16 pos = (r.y * TILE_SIZE + y) * SCREEN_WIDTH + r.x * TILE_SIZE + x;
-			if (!(y % density || x % density))
-				SCREENBUFFER[pos] = SCREENBUFFER[pos] & toColor;
+			for (uint8 i = fadeStrength; i > 0; --i)
+				SCREENBUFFER[pos] = fadeColor(SCREENBUFFER[pos]);
 		}
 }
 
@@ -702,16 +705,4 @@ void clearScreen()
 	uint16 length = SCREEN_HEIGHT * SCREEN_WIDTH;
 	for (uint16 i = 0; i < length; ++i)
 		SCREENBUFFER[i] = black;
-}
-
-// UNUSED
-
-void invert(struct Rect r) 
-{
-	for (uint8 y = 0; y < TILE_SIZE; ++y)
-		for (uint8 x = 0; x < TILE_SIZE; ++x) 
-		{
-			uint32 pos = (r.y * TILE_SIZE + y) * SCREEN_WIDTH + r.x * TILE_SIZE + x;
-			SCREENBUFFER[pos] = white - SCREENBUFFER[pos];
-		}
 }
