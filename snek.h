@@ -1,4 +1,4 @@
-//Header file
+
 #define SCREEN_WIDTH	240
 #define SCREEN_HEIGHT	160
 
