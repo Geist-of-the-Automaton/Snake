@@ -1,7 +1,6 @@
 // Copyright 2019 Auden Childress
 
 #include "snek.h"
-#include <time.h>
 #include <stdlib.h>
 
 int main() 
@@ -9,13 +8,11 @@ int main()
 	REG_DISPLAY = VIDEOMODE | BGMODE;
 	aliveColor = makeColor(0x13, 0x18, 0x05);
 	nomColor = makeColor(0x15, 0x1b, 0x08);
-	foodColor = makeColor(0x1f, 0x1f, 0x14);
 	deadColor = makeColor(0x12, 0x07, 0);
 	tongueColor = makeColor(0x1f, 0, 0);
 	white = makeColor(0x1f, 0x1f, 0x1f);
 	black = 0;
 	winColor = makeColor(0, 0x17, 0x03);
-	srand(time(NULL));
 	while (1) 
 	{
 		titleScreen();
@@ -25,6 +22,7 @@ int main()
 
 void titleScreen()
 {
+	foodColor = makeColor(0x1f, 0x1f, 0x14);
 	odo = 0;
 	food.y = 15;
 	// draw snek title to screen
@@ -212,12 +210,12 @@ void hasEaten()
 {
 	if (snek[0].x == food.x && snek[0].y == food.y) 
 	{
-		// needs to be check for if you are the longest you can be. if so move snek forward one to appear as though it go longer and display win screen
 		snek[length] = snek[length - 1];
 		++length;
+		foodColor = makeColor((food.x + food.y) % 32, (snek[length - 1].x + snek[length - 1].y) % 32, (snek[length / 2].x + snek[length / 2].y) % 32);
 		uint8 flag = 1;
-		uint8 X = rand();
-		uint8 Y = rand() % HEIGHT;
+		uint8 X = rand() + snek[length / 2].y;
+		uint8 Y = (rand() + snek[length / 2].x) % HEIGHT;
 		// sets a random height and width and progresses forward until the food is not on top of the snake
 		while(flag)
 		{
@@ -253,7 +251,7 @@ void hasEaten()
 uint8 isDead() 
 {
 	uint8 ateSelf = hitSelf();
-	if (hitWall() || ateSelf) 
+	if (hitWall() || ateSelf)
 	{
 		drawOther(snek[0], black, 0);
 		drawOther(snek[0], aliveColor, 1);
@@ -297,7 +295,6 @@ uint8 isDead()
 			sync();
 		// make the snake fade out like an old-school rpg boss
 		fadeSnek();
-		sync();
 	}
 	else if (length == HEIGHT * WIDTH)
 	{
