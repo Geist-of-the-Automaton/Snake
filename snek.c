@@ -194,7 +194,10 @@ void moveSnek()
 	odo %= 21;
 	drawOther(snek[length - 1], black, 0);
 	for (uint16 i = length - 1; i > 0; --i)
-		snek[i] = snek[i - 1];
+	{
+		snek[i].x = snek[i - 1].x;
+		snek[i].y = snek[i - 1].y;
+	}
 	if (dir == DOWN)
 		++snek[0].y;
 	else if (dir == UP)
