@@ -8,3 +8,7 @@ A video of the game can be found at:
 https://www.youtube.com/watch?v=xyQhLwDmrnc
 
 If you have any questions please email me at geistfulAutomaton@gmail.com.
+
+![Title Screen](https://github.com/Geist-of-the-Automaton/Snake/blob/master/demo/gameDemo.PNG)
+![About to eat](https://github.com/Geist-of-the-Automaton/Snake/blob/master/demo/gameDemo2.PNG)
+![Dead](https://github.com/Geist-of-the-Automaton/Snake/blob/master/demo/gameDemo3.PNG)
